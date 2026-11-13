@@ -1,0 +1,76 @@
+name: Build ISO
+
+on:
+  push:
+    branches:
+      - vast
+    paths:
+      - "vast/**"
+      - "!vast/**.md"
+      - "justfile"
+      - ".forgejo/workflows/build-iso.yml"
+  workflow_dispatch:
+    inputs:
+      profile:
+        # make this an enum: all, noctalia, minimal
+        description: "Profile from vast/profiles/"
+        type: string
+        default: "noctalia"
+      dotfiles_ref:
+        description: "Branch or tag of the dotfiles repository"
+        type: string
+        default: "main"
+      publish:
+        description: "Publish the ISO to the package registry"
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: linux-amd64
+
+    env:
+      PROFILE: ${{ inputs.profile || 'noctalia' }}
+      DOTFILES_REF: ${{ inputs.dotfiles_ref || 'main' }}
+
+    container:
+      image: ghcr.io/void-linux/void-glibc-full:latest
+      # loop devices for the EFI and rootfs images, new /dev/loopN nodes only
+      # show up in the container when the host /dev is mounted
+      options: --privileged --platform linux/amd64 -v /dev:/dev
+      env:
+        FORGEJO_URL: https://code.hosaka.cc
+        XBPS_MIRROR_URL: mirror.hosaka.cc/voidlinux
+        DOTFILES_URL: https://code.hosaka.cc/hosaka/.dotfiles.git
+
+    steps:
+      - name: Prepare container
+        run: |
+          # switch to our own mirror, the ISO itself is built with repos in the dotfiles
+          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
+          sed -i "s|repo-default.voidlinux.org|$XBPS_MIRROR_URL|g" /etc/xbps.d/*-repository-*.conf
+          xbps-install -Syu xbps && xbps-install -yu
+          xbps-install -y bash chezmoi coreutils curl dosfstools e2fsprogs gawk git jq just kmod util-linux
+
+      - name: Checkout repository
+        run: |
+          git clone --no-checkout --filter=tree:0 "$FORGEJO_URL/$FORGEJO_REPOSITORY.git" .
+          git config --global --add safe.directory "$PWD"
+          git checkout "$FORGEJO_SHA"
+
+      - name: Checkout dotfiles
+        run: |
+          # full clone, it becomes ~/.local/share/chezmoi on the installed system
+          git clone --branch "$DOTFILES_REF" "$DOTFILES_URL" /tmp/dotfiles
+          git -C /tmp/dotfiles log -1 --format='dotfiles at %h %s'
+
+      - name: Build ISO
+        run: |
+          DOTFILES=/tmp/dotfiles just iso "$PROFILE"
+          cat out/*.sha256
+
+      - name: Publish ISO
+        if: forgejo.event_name == 'push' || inputs.publish
+        env:
+          ISO_UPLOAD_TOKEN: ${{ secrets.ISO_UPLOAD_TOKEN }}
+        run: vast/publish.sh "$PROFILE" out/vast-"$PROFILE"-*.iso out/vast-"$PROFILE"-*.iso.sha256
