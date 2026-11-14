@@ -12,10 +12,14 @@ on:
   workflow_dispatch:
     inputs:
       profile:
-        # make this an enum: all, noctalia, minimal
-        description: "Profile from vast/profiles/"
-        type: string
-        default: "noctalia"
+        description: "Profile from vast/profiles/, or all of them"
+        type: choice
+        # keep in sync with vast/profiles/
+        options:
+          - all
+          - noctalia
+          - noctalia-nvidia
+        default: "all"
       dotfiles_ref:
         description: "Branch or tag of the dotfiles repository"
         type: string
@@ -30,7 +34,8 @@ jobs:
     runs-on: linux-amd64
 
     env:
-      PROFILE: ${{ inputs.profile || 'noctalia' }}
+      # todo: shouldn't this be a matrix build instead of sequential?
+      PROFILE: ${{ inputs.profile || 'all' }}
       DOTFILES_REF: ${{ inputs.dotfiles_ref || 'main' }}
 
     container:
@@ -73,4 +78,12 @@ jobs:
         if: forgejo.event_name == 'push' || inputs.publish
         env:
           ISO_UPLOAD_TOKEN: ${{ secrets.ISO_UPLOAD_TOKEN }}
-        run: vast/publish.sh "$PROFILE" out/vast-"$PROFILE"-*.iso out/vast-"$PROFILE"-*.iso.sha256
+        run: |
+          # every ISO built in this run, each profile in its own package version:
+          # out/vast-<profile>-x86_64-<date>.iso
+          for iso in out/vast-*.iso; do
+            profile=$(basename "$iso")
+            profile=${profile#vast-}
+            profile=${profile%-x86_64-*}
+            vast/publish.sh "$profile" "$iso" "$iso.sha256"
+          done

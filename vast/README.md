@@ -28,12 +28,22 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 
 `postsetup.sh` runs inside the new rootfs before it is compressed:
 
-1. applies `system/` to `/` with chezmoi as root
+1. applies dotfiles `system/` to `/` with chezmoi as root
 2. runs a few modifications to the installed system
 3. runs `chezmoi init` and `chezmoi apply --exclude scripts` as the user would on a fresh machine
 4. moves the resulting user `$HOME`, including the chezmoi source and state, to `/etc/skel`
 
 `/etc/skel` is what both the live user and the user created by `void-installer` are made from.
+
+## Profiles
+
+| Profile | ISO | GPUs |
+| --- | --- | --- |
+| `noctalia` | `vast-noctalia-x86_64-<date>.iso` | anything with open drivers: AMD, Intel, kernel drivers and Mesa |
+| `noctalia-nvidia` | `vast-noctalia-nvidia-x86_64-<date>.iso` | NVIDIA Turing and newer, adds the proprietary driver, about 1G extra |
+
+- Both have the same Niri/Noctalia desktop.
+- Vulkan drivers and hardware video decoding (`mesa-vulkan-radeon`, `mesa-vulkan-intel`, `mesa-vaapi`, `intel-media-driver`) are not included, install what your hardware needs.
 
 ## Building
 
@@ -41,7 +51,9 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 just                # list recipes
 just iso-dry-run    # packages, services and the mklive.sh command line, no root needed
 just iso            # build out/vast-noctalia-x86_64-<date>.iso (runs as root)
-just iso-fast       # gzip squashfs, quicker for testing
+just iso noctalia-nvidia   # another profile
+just iso all        # every profile in vast/profiles/, one after the other
+just iso-fast       # gzip squashfs, quicker for testing (also takes a profile or all)
 just iso noctalia KEEP=1   # keep the mklive build directory for inspection
 just clean          # remove out/ and leftover build directories
 ```
@@ -54,7 +66,7 @@ Needs `qemu` and `edk2-ovmf` packages on Void.
 
 ```bash
 just qemu           # boot the newest ISO with UEFI and an empty 40G disk
-ISO=out/<file>.iso just qemu   # boot a specific ISO
+ISO=out/<file>.iso just qemu   # boot a specific ISO (after `just iso all` the newest is the last profile)
 just qemu-disk      # boot the installed disk
 just qemu-reset     # throw away the disk and UEFI variables
 ```
@@ -87,7 +99,7 @@ chezmoi apply   # reads the secrets and runs the run_once/run_onchange scripts
 
 ## CI
 
-[build-iso.yml](../.forgejo/workflows/build-iso.yml) builds on pushes to `vast` that touch `vast/`, `justfile` or the workflow, and on manual dispatch. The ISO and its checksum are uploaded to the generic package registry, replacing the previous build:
+[build-iso.yml](../.forgejo/workflows/build-iso.yml) builds on pushes to `vast` that touch `vast/`, `justfile` or the workflow, and on manual dispatch. Pushes build `all` profiles, a dispatch picks one or `all` (the choices are listed in the workflow, add new profiles there). Each ISO and its checksum are uploaded to the generic package registry, one package version per profile, replacing the previous build:
 
 ```
 https://code.hosaka.cc/api/packages/hosaka/generic/vast-iso/<profile>/vast-<profile>-x86_64-<date>.iso

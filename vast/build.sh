@@ -3,10 +3,11 @@
 # Build a Vast Linux ISO: Void Linux with my packages, services, system files
 # and dotfiles, all taken from my chezmoi repository. See vast/README.md.
 #
-# Usage: DOTFILES=<dir> vast/build.sh <profile>
+# Usage: DOTFILES=<dir> vast/build.sh <profile|all>
 #
-# Normally invoked through `just iso <profile>`. Runs as root, except with
-# DRY_RUN=1 which only prints what would be built.
+# Normally invoked through `just iso <profile>`. `all` builds every profile in
+# vast/profiles/, one after the other. Runs as root, except with DRY_RUN=1
+# which only prints what would be built.
 #
 # Environment:
 #   DOTFILES   chezmoi repository (the directory with .chezmoiroot), baked in
@@ -27,8 +28,16 @@ cd "$(dirname "$(readlink -f "$0")")/.."
 # installer.sh dependencies, mkiso.sh adds the same for the official ISOs
 INSTALLER_PACKAGES="dialog cryptsetup lvm2 mdadm grub-i386-efi grub-x86_64-efi"
 
-[ $# -eq 1 ] || die "usage: $0 <profile>"
+[ $# -eq 1 ] || die "usage: $0 <profile|all>"
 profile=$1
+
+if [ "$profile" = all ]; then
+  for env in vast/profiles/*.env; do
+    "$PWD/vast/build.sh" "$(basename "$env" .env)"
+  done
+  exit 0
+fi
+
 [ -f "vast/profiles/$profile.env" ] || die "no such profile: vast/profiles/$profile.env"
 [ -f "${DOTFILES:-}/.chezmoiroot" ] || die "DOTFILES must point to the chezmoi repository, got '${DOTFILES:-}'"
 [ -d "$DOTFILES/system" ] || die "$DOTFILES has no system/ directory"

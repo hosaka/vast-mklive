@@ -16,7 +16,7 @@ ovmf := env("OVMF_DIR", "/usr/share/edk2/x64")
 @help:
   just --list --unsorted
 
-[doc('build an ISO, extra args are env vars for vast/build.sh, e.g. FAST=1 KEEP=1')]
+[doc('build an ISO (a profile from vast/profiles/, or all of them), extra args are env vars for vast/build.sh, e.g. FAST=1 KEEP=1')]
 iso profile="noctalia" *env:
   {{ sudo }} env DOTFILES={{ quote(dotfiles) }} OUT_DIR={{ quote(out) }} {{ env }} ./vast/build.sh {{ profile }}
 
