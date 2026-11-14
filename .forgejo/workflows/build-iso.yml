@@ -1,14 +1,14 @@
 name: Build ISO
 
 on:
-  push:
-    branches:
-      - vast
-    paths:
-      - "vast/**"
-      - "!vast/**.md"
-      - "justfile"
-      - ".forgejo/workflows/build-iso.yml"
+  # push:
+  #   branches:
+  #     - vast
+  #   paths:
+  #     - "vast/**"
+  #     - "!vast/**.md"
+  #     - "justfile"
+  #     - ".forgejo/workflows/build-iso.yml"
   workflow_dispatch:
     inputs:
       flavour:
