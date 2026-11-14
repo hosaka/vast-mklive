@@ -11,10 +11,10 @@ on:
       - ".forgejo/workflows/build-iso.yml"
   workflow_dispatch:
     inputs:
-      profile:
-        description: "Profile from vast/profiles/, or all of them"
+      flavour:
+        description: "Flavour from vast/flavours/, or all of them"
         type: choice
-        # keep in sync with vast/profiles/
+        # note: keep in sync with vast/flavours/
         options:
           - all
           - noctalia
@@ -35,7 +35,7 @@ jobs:
 
     env:
       # todo: shouldn't this be a matrix build instead of sequential?
-      PROFILE: ${{ inputs.profile || 'all' }}
+      FLAVOUR: ${{ inputs.flavour || 'all' }}
       DOTFILES_REF: ${{ inputs.dotfiles_ref || 'main' }}
 
     container:
@@ -71,7 +71,7 @@ jobs:
 
       - name: Build ISO
         run: |
-          DOTFILES=/tmp/dotfiles just iso "$PROFILE"
+          DOTFILES=/tmp/dotfiles just iso "$FLAVOUR"
           cat out/*.sha256
 
       - name: Publish ISO
@@ -79,11 +79,11 @@ jobs:
         env:
           ISO_UPLOAD_TOKEN: ${{ secrets.ISO_UPLOAD_TOKEN }}
         run: |
-          # every ISO built in this run, each profile in its own package version:
-          # out/vast-<profile>-x86_64-<date>.iso
+          # every ISO built in this run, each flavour in its own package version:
+          # out/vast-<flavour>-x86_64-<date>.iso
           for iso in out/vast-*.iso; do
-            profile=$(basename "$iso")
-            profile=${profile#vast-}
-            profile=${profile%-x86_64-*}
-            vast/publish.sh "$profile" "$iso" "$iso.sha256"
+            flavour=$(basename "$iso")
+            flavour=${flavour#vast-}
+            flavour=${flavour%-x86_64-*}
+            vast/publish.sh "$flavour" "$iso" "$iso.sha256"
           done

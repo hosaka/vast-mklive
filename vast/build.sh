@@ -3,10 +3,10 @@
 # Build a Vast Linux ISO: Void Linux with my packages, services, system files
 # and dotfiles, all taken from my chezmoi repository. See vast/README.md.
 #
-# Usage: DOTFILES=<dir> vast/build.sh <profile|all>
+# Usage: DOTFILES=<dir> vast/build.sh <flavour|all>
 #
-# Normally invoked through `just iso <profile>`. `all` builds every profile in
-# vast/profiles/, one after the other. Runs as root, except with DRY_RUN=1
+# Normally invoked through `just iso <flavour>`. `all` builds every flavour in
+# vast/flavours/, one after the other. Runs as root, except with DRY_RUN=1
 # which only prints what would be built.
 #
 # Environment:
@@ -28,29 +28,29 @@ cd "$(dirname "$(readlink -f "$0")")/.."
 # installer.sh dependencies, mkiso.sh adds the same for the official ISOs
 INSTALLER_PACKAGES="dialog cryptsetup lvm2 mdadm grub-i386-efi grub-x86_64-efi"
 
-[ $# -eq 1 ] || die "usage: $0 <profile|all>"
-profile=$1
+[ $# -eq 1 ] || die "usage: $0 <flavour|all>"
+flavour=$1
 
-if [ "$profile" = all ]; then
-  for env in vast/profiles/*.env; do
+if [ "$flavour" = all ]; then
+  for env in vast/flavours/*.env; do
     "$PWD/vast/build.sh" "$(basename "$env" .env)"
   done
   exit 0
 fi
 
-[ -f "vast/profiles/$profile.env" ] || die "no such profile: vast/profiles/$profile.env"
+[ -f "vast/flavours/$flavour.env" ] || die "no such flavour: vast/flavours/$flavour.env"
 [ -f "${DOTFILES:-}/.chezmoiroot" ] || die "DOTFILES must point to the chezmoi repository, got '${DOTFILES:-}'"
 [ -d "$DOTFILES/system" ] || die "$DOTFILES has no system/ directory"
-[ -n "${DRY_RUN:-}" ] || [ "$(id -u)" -eq 0 ] || die "must run as root, use: just iso $profile"
+[ -n "${DRY_RUN:-}" ] || [ "$(id -u)" -eq 0 ] || die "must run as root, use: just iso $flavour"
 for tool in chezmoi git jq; do
   command -v "$tool" >/dev/null || die "$tool is required"
 done
 
-# shellcheck source-path=SCRIPTDIR source=profiles/noctalia.env
-. "vast/profiles/$profile.env"
+# shellcheck source-path=SCRIPTDIR source=flavours/noctalia.env
+. "vast/flavours/$flavour.env"
 
 OUT_DIR=$(readlink -m "${OUT_DIR:-out}")
-iso="$OUT_DIR/vast-$profile-x86_64-$(date -u +%Y%m%d).iso"
+iso="$OUT_DIR/vast-$flavour-x86_64-$(date -u +%Y%m%d).iso"
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/vast-build.XXXXXX")
 trap 'rm -rf "$work"' EXIT
@@ -105,7 +105,7 @@ mapfile -t repos < <(cat "$xbpsd"/*.conf | sed -n 's/^repository=//p')
 mapfile -t ignored < <(cat "$xbpsd"/*.conf | sed -n 's/^ignorepkg=//p')
 [ ${#repos[@]} -gt 0 ] || die "no repository= entries in $xbpsd"
 
-# void-installer, the same way mkiso.sh includes it, with the profile's
+# void-installer, the same way mkiso.sh includes it, with the flavour's
 # USERGROUPS added to the groups that its user account menu ticks by default
 mkdir -p "$work/include/usr/bin"
 installer="$work/include/usr/bin/void-installer"
@@ -143,7 +143,7 @@ done
 [ -z "${FAST:-}" ] || args+=(-s gzip)
 [ -z "${KEEP:-}" ] || args+=(-K)
 
-info "profile $profile, ${#packages[@]} packages from chezmoi, kernel $KERNEL"
+info "flavour $flavour, ${#packages[@]} packages from chezmoi, kernel $KERNEL"
 info "services: ${services[*]}"
 info "repositories: ${repos[*]}"
 

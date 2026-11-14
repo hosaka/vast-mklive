@@ -16,16 +16,16 @@ ovmf := env("OVMF_DIR", "/usr/share/edk2/x64")
 @help:
   just --list --unsorted
 
-[doc('build an ISO (a profile from vast/profiles/, or all of them), extra args are env vars for vast/build.sh, e.g. FAST=1 KEEP=1')]
-iso profile="noctalia" *env:
-  {{ sudo }} env DOTFILES={{ quote(dotfiles) }} OUT_DIR={{ quote(out) }} {{ env }} ./vast/build.sh {{ profile }}
+[doc('build an ISO (a flavour from vast/flavours/, or all of them), extra args are env vars for vast/build.sh, e.g. FAST=1 KEEP=1')]
+iso flavour="noctalia" *env:
+  {{ sudo }} env DOTFILES={{ quote(dotfiles) }} OUT_DIR={{ quote(out) }} {{ env }} ./vast/build.sh {{ flavour }}
 
 [doc('quicker test build: gzip squashfs instead of xz')]
-iso-fast profile="noctalia" *env: (iso profile "FAST=1" env)
+iso-fast flavour="noctalia" *env: (iso flavour "FAST=1" env)
 
 [doc('show packages, services and mklive.sh arguments without building')]
-iso-dry-run profile="noctalia":
-  env DOTFILES={{ quote(dotfiles) }} OUT_DIR={{ quote(out) }} DRY_RUN=1 ./vast/build.sh {{ profile }}
+iso-dry-run flavour="noctalia":
+  env DOTFILES={{ quote(dotfiles) }} OUT_DIR={{ quote(out) }} DRY_RUN=1 ./vast/build.sh {{ flavour }}
 
 [doc('boot an ISO (ISO=<path>, default: newest in out/) in qemu with UEFI and an empty disk to install to, extra args go to qemu')]
 qemu *args:

@@ -14,7 +14,7 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 | System files (`/etc`) | dotfiles: `system/`, a separate chezmoi source applied to `/` |
 | XBPS repos and ignored packages | dotfiles: `system/etc/xbps.d/` |
 | User dotfiles | dotfiles: `dotfiles/` |
-| Flags, kernel, user and its groups | here: `vast/profiles/<profile>.env` |
+| Flags, kernel, user and its groups | here: `vast/flavours/<flavour>.env` |
 | vast-packages signing key | here: `keys/d4:fe:01:8b:18:0e:5c:ea:25:00:50:a5:b5:77:78:2c.plist` |
 
 ## How it works
@@ -22,7 +22,7 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 `just iso` runs [build.sh](build.sh) as root, which:
 
 1. snapshots the chezmoi repository (`DOTFILES` from env or `~/.local/share/chezmoi` by default)
-2. seeds a chezmoi config with the profile's `CHEZMOI_FLAGS` and reads `chezmoi data`
+2. seeds a chezmoi config with the flavour's `CHEZMOI_FLAGS` and reads `chezmoi data`
 3. reads the repositories and `ignorepkg` entries from `system/etc/xbps.d/`
 4. runs `mklive.sh` with specified repos, the kernel, `void-installer`, makes the kernel cmdline and [postsetup.sh](postsetup.sh) as the `-x` hook
 
@@ -35,9 +35,11 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 
 `/etc/skel` is what both the live user and the user created by `void-installer` are made from.
 
-## Profiles
+## Flavours and profiles
 
-| Profile | ISO | GPUs |
+A **profile** is a chezmoi flag (e.g. `desktop`, `development`), each profile has a package group with its services in `packages.toml` and some dotfiles that are only applied when it is on. A **flavour** is an ISO with the profiles baked into it. Flavours only bake in what the live system needs to run on the hardware, profiles can turned on after installing (see [Installing](#installing)).
+
+| Flavour | ISO | GPUs |
 | --- | --- | --- |
 | `noctalia` | `vast-noctalia-x86_64-<date>.iso` | anything with open drivers: AMD, Intel, kernel drivers and Mesa |
 | `noctalia-nvidia` | `vast-noctalia-nvidia-x86_64-<date>.iso` | NVIDIA Turing and newer, adds the proprietary driver, about 1G extra |
@@ -51,9 +53,9 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 just                # list recipes
 just iso-dry-run    # packages, services and the mklive.sh command line, no root needed
 just iso            # build out/vast-noctalia-x86_64-<date>.iso (runs as root)
-just iso noctalia-nvidia   # another profile
-just iso all        # every profile in vast/profiles/, one after the other
-just iso-fast       # gzip squashfs, quicker for testing (also takes a profile or all)
+just iso noctalia-nvidia   # another flavour
+just iso all        # every flavour in vast/flavours/, one after the other
+just iso-fast       # gzip squashfs, quicker for testing (also takes a flavour or all)
 just iso noctalia KEEP=1   # keep the mklive build directory for inspection
 just clean          # remove out/ and leftover build directories
 ```
@@ -66,7 +68,7 @@ Needs `qemu` and `edk2-ovmf` packages on Void.
 
 ```bash
 just qemu           # boot the newest ISO with UEFI and an empty 40G disk
-ISO=out/<file>.iso just qemu   # boot a specific ISO (after `just iso all` the newest is the last profile)
+ISO=out/<file>.iso just qemu   # boot a specific ISO (after `just iso all` the newest is the last flavour)
 just qemu-disk      # boot the installed disk
 just qemu-reset     # throw away the disk and UEFI variables
 ```
@@ -86,23 +88,25 @@ To capture the keyboard in a QEMU window use `Ctrl+Alt+G`, press again to restor
 Run `void-installer` from the live system as root: `doas void-installer`:
 
 - **Source**: `Local`. Copies from the live system, (with all packages, services, `/etc`) instead of downloading a bare `base-system` with `Network`.
-- **User account**: Any username. The groups in the profile's `USERGROUPS` are already ticked, on top of the installer's defaults.
+- **User account**: Any username. The groups in the flavour's `USERGROUPS` are already ticked, on top of the installer's defaults.
 - **Filesystems**: ext4 or btrfs (note that the installer's btrfs has no subvolumes, so there is no snapper setup yet).
-- **Services**: Everything from `packages.toml` is already ticked.
+- **Services**: Everything the flavour enables is already ticked.
 - **Mirror**: Leave this as is.
 
-After the first boot, only the things that need secrets or hardware keys are left:
+After the first boot, turn on the profiles that the ISO leaves out. This installs their packages, runs `chezmoi apply` and links their services:
 
 ```bash
-chezmoi apply   # reads the secrets and runs the run_once/run_onchange scripts
+just profile on development
+just profile status            # list profiles on/off status
+just profile off development   # unlink its services, remove the packages nothing else needs
 ```
 
 ## CI
 
-[build-iso.yml](../.forgejo/workflows/build-iso.yml) builds on pushes to `vast` that touch `vast/`, `justfile` or the workflow, and on manual dispatch. Pushes build `all` profiles, a dispatch picks one or `all` (the choices are listed in the workflow, add new profiles there). Each ISO and its checksum are uploaded to the generic package registry, one package version per profile, replacing the previous build:
+[build-iso.yml](../.forgejo/workflows/build-iso.yml) builds on pushes to `vast` that touch `vast/`, `justfile` or the workflow, and on manual dispatch. Pushes build `all` flavours, a dispatch picks one or `all` (the choices are listed in the workflow, add new flavours there). Each ISO and its checksum are uploaded to the generic package registry, one package version per flavour, replacing the previous build:
 
 ```
-https://code.hosaka.cc/api/packages/hosaka/generic/vast-iso/<profile>/vast-<profile>-x86_64-<date>.iso
+https://code.hosaka.cc/api/packages/hosaka/generic/vast-iso/<flavour>/vast-<flavour>-x86_64-<date>.iso
 ```
 
 Requirements:
@@ -117,4 +121,4 @@ Requirements:
 just sync-upstream   # fast-forward master from the mirror, push it, merge into this branch
 ```
 
-Upstream changes (`mklive.sh`, `installer.sh`, ...) are outside the CI path filter, so a sync does not trigger a build. Dispatch one by hand when upstream changed something that matters for the ISO.
+Upstream changes (`mklive.sh`, `installer.sh`, etc.) are outside the CI path filter, so a sync does not trigger a build. Dispatch one by hand when upstream changed something that matters for the ISO.
