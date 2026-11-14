@@ -71,7 +71,7 @@ just qemu-disk      # boot the installed disk
 just qemu-reset     # throw away the disk and UEFI variables
 ```
 
-The live user is `alex`, password `voidlinux`.
+The live user is `vast`, password `voidlinux`.
 
 Extra arguments go to qemu can be passed with:
 
@@ -85,11 +85,11 @@ To capture the keyboard in a QEMU window use `Ctrl+Alt+G`, press again to restor
 
 Run `void-installer` from the live system as root: `doas void-installer`:
 
-- **Source**: `Local`. It copies the live system, with all packages, services, `/etc` and keys. `Network` would install a bare `base-system` instead.
-- **User account**: login `alex`. The groups in the profile's `USERGROUPS` are already ticked, on top of the installer's defaults.
+- **Source**: `Local`. Copies from the live system, (with all packages, services, `/etc`) instead of downloading a bare `base-system` with `Network`.
+- **User account**: Any username. The groups in the profile's `USERGROUPS` are already ticked, on top of the installer's defaults.
 - **Filesystems**: ext4 or btrfs (note that the installer's btrfs has no subvolumes, so there is no snapper setup yet).
-- **Services**: everything from `packages.toml` is already ticked.
-- **Mirror**: leave this as is.
+- **Services**: Everything from `packages.toml` is already ticked.
+- **Mirror**: Leave this as is.
 
 After the first boot, only the things that need secrets or hardware keys are left:
 
