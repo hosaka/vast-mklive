@@ -14,7 +14,7 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 | System files (`/etc`) | dotfiles: `system/`, a separate chezmoi source applied to `/` |
 | XBPS repos and ignored packages | dotfiles: `system/etc/xbps.d/` |
 | User dotfiles | dotfiles: `dotfiles/` |
-| Flags, kernel, live user | here: `vast/profiles/<profile>.env` |
+| Flags, kernel, user and its groups | here: `vast/profiles/<profile>.env` |
 | vast-packages signing key | here: `keys/d4:fe:01:8b:18:0e:5c:ea:25:00:50:a5:b5:77:78:2c.plist` |
 
 ## How it works
@@ -86,7 +86,7 @@ To capture the keyboard in a QEMU window use `Ctrl+Alt+G`, press again to restor
 Run `void-installer` from the live system as root: `doas void-installer`:
 
 - **Source**: `Local`. It copies the live system, with all packages, services, `/etc` and keys. `Network` would install a bare `base-system` instead.
-- **User account**: login `alex`. The installer's default groups lack some that I use, also tick `input`, `plugdev`, `socklog`, `storage` and `bluetooth`.
+- **User account**: login `alex`. The groups in the profile's `USERGROUPS` are already ticked, on top of the installer's defaults.
 - **Filesystems**: ext4 or btrfs (note that the installer's btrfs has no subvolumes, so there is no snapper setup yet).
 - **Services**: everything from `packages.toml` is already ticked.
 - **Mirror**: leave this as is.

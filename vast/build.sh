@@ -105,13 +105,20 @@ mapfile -t repos < <(cat "$xbpsd"/*.conf | sed -n 's/^repository=//p')
 mapfile -t ignored < <(cat "$xbpsd"/*.conf | sed -n 's/^ignorepkg=//p')
 [ ${#repos[@]} -gt 0 ] || die "no repository= entries in $xbpsd"
 
-# void-installer, the same way mkiso.sh includes it
+# void-installer, the same way mkiso.sh includes it, with the profile's
+# USERGROUPS added to the groups that its user account menu ticks by default
 mkdir -p "$work/include/usr/bin"
+installer="$work/include/usr/bin/void-installer"
+usergroups=${USERGROUPS// /,}
 
 # shellcheck source=/dev/null
 mklive_version=$(. ./lib.sh && PROGNAME='' version)
-sed "s/@@MKLIVE_VERSION@@/$mklive_version/" installer.sh >"$work/include/usr/bin/void-installer"
-chmod 755 "$work/include/usr/bin/void-installer"
+sed -e "s/@@MKLIVE_VERSION@@/$mklive_version/" \
+  -e "s/^\(\s*_groups=\"[^\"]*\)/\1,$usergroups/" \
+  installer.sh >"$installer"
+grep -q "_groups=\".*,$usergroups\"" "$installer" ||
+  die "could not set the default groups in void-installer, has installer.sh changed?"
+chmod 755 "$installer"
 
 args=(
   -a x86_64
