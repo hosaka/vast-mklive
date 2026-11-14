@@ -21,7 +21,7 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 
 `just iso` runs [build.sh](build.sh) as root, which:
 
-1. snapshots the chezmoi repository (`DOTFILES` from env or `~/.local/share/chezmoi` by default)
+1. snapshots the chezmoi repository (`--dotfiles`, `~/.local/share/chezmoi` by default)
 2. seeds a chezmoi config with the flavour's `CHEZMOI_FLAGS` and reads `chezmoi data`
 3. reads the repositories and `ignorepkg` entries from `system/etc/xbps.d/`
 4. runs `mklive.sh` with specified repos, the kernel, `void-installer`, makes the kernel cmdline and [postsetup.sh](postsetup.sh) as the `-x` hook
@@ -51,14 +51,19 @@ A **profile** is a chezmoi flag (e.g. `desktop`, `development`), each profile ha
 
 ```bash
 just                # list recipes
-just iso-dry-run    # packages, services and the mklive.sh command line, no root needed
+just usage iso      # arguments and options of a recipe
+just iso --dry-run  # packages, services and the mklive.sh command line, no root needed
 just iso            # build out/vast-noctalia-x86_64-<date>.iso (runs as root)
-just iso noctalia-nvidia   # another flavour
+just iso noctalia-nvidia   # build a different flavour
 just iso all        # every flavour in vast/flavours/, one after the other
-just iso-fast       # gzip squashfs, quicker for testing (also takes a flavour or all)
-just iso noctalia KEEP=1   # keep the mklive build directory for inspection
+just iso --fast     # gzip squashfs, quicker for testing
+just iso --keep     # keep the mklive build directory for inspection
+just iso --dotfiles ~/Code/dotfiles   # bake in another chezmoi repository, uncommitted changes included
+just iso --outdir /tmp/isos           # write the ISO somewhere else than out/
 just clean          # remove out/ and leftover build directories
 ```
+
+The options can be combined and go anywhere after `iso`, e.g. `just iso all --fast`.
 
 Packages are cached in `xbps-cachedir-x86_64/` between builds.
 
@@ -67,18 +72,20 @@ Packages are cached in `xbps-cachedir-x86_64/` between builds.
 Needs `qemu` and `edk2-ovmf` packages on Void.
 
 ```bash
-just qemu           # boot the newest ISO with UEFI and an empty 40G disk
-ISO=out/<file>.iso just qemu   # boot a specific ISO (after `just iso all` the newest is the last flavour)
-just qemu-disk      # boot the installed disk
-just qemu-reset     # throw away the disk and UEFI variables
+just qemu           # boot the newest ISO in out/ with UEFI and an empty 40G disk
+just usage qemu iso # arguments and options of a qemu recipe
+just qemu iso --flavour noctalia-nvidia   # the newest ISO of a flavour (after `just iso all` the newest is the last flavour)
+just qemu disk      # boot the installed disk
+just qemu reset     # throw away the disk and UEFI variables
 ```
 
-The live user is `vast`, password `voidlinux`.
+The recipes are in [qemu.just](qemu.just), the `qemu` module of the justfile. The live user is `vast`, password `voidlinux`.
 
-Extra arguments go to qemu can be passed with:
+Extra arguments go to qemu:
 
 ```bash
-just qemu-disk -device usb-host,hostbus=1,hostport=3
+just qemu iso -- -device usb-host,hostbus=1,hostport=3
+just qemu disk -device usb-host,hostbus=1,hostport=3
 ```
 
 To capture the keyboard in a QEMU window use `Ctrl+Alt+G`, press again to restore it.

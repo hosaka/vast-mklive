@@ -11,7 +11,7 @@
 #
 # Environment:
 #   DOTFILES   chezmoi repository (the directory with .chezmoiroot), baked in
-#   OUT_DIR    output directory for the ISO and its checksum (default: out)
+#   OUTDIR     output directory for the ISO and its checksum (default: out)
 #   FAST=1     gzip squashfs instead of xz, quicker to build but a bigger ISO
 #   KEEP=1     keep the mklive build directory
 #   DRY_RUN=1  print the package list, services and mklive.sh arguments
@@ -49,8 +49,8 @@ done
 # shellcheck source-path=SCRIPTDIR source=flavours/noctalia.env
 . "vast/flavours/$flavour.env"
 
-OUT_DIR=$(readlink -m "${OUT_DIR:-out}")
-iso="$OUT_DIR/vast-$flavour-x86_64-$(date -u +%Y%m%d).iso"
+OUTDIR=$(readlink -m "${OUTDIR:-out}")
+iso="$OUTDIR/vast-$flavour-x86_64-$(date -u +%Y%m%d).iso"
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/vast-build.XXXXXX")
 trap 'rm -rf "$work"' EXIT
@@ -162,15 +162,15 @@ export VAST_USER="$USERNAME"
 export VAST_DOTFILES_URL="$DOTFILES_URL"
 export VAST_DOTFILES_PUSHURL="$DOTFILES_PUSHURL"
 
-mkdir -p "$OUT_DIR"
-[ -e "$OUT_DIR/.gitignore" ] || echo '*' >"$OUT_DIR/.gitignore"
+mkdir -p "$OUTDIR"
+[ -e "$OUTDIR/.gitignore" ] || echo '*' >"$OUTDIR/.gitignore"
 
 ./mklive.sh "${args[@]}"
 
-(cd "$OUT_DIR" && sha256sum "$(basename "$iso")" >"$(basename "$iso").sha256")
+(cd "$OUTDIR" && sha256sum "$(basename "$iso")" >"$(basename "$iso").sha256")
 
 # chown results back to whoever ran the build
 owner=${DOAS_USER:-${SUDO_USER:-}}
-[ -z "$owner" ] || chown -R "$owner:" "$OUT_DIR"
+[ -z "$owner" ] || chown -R "$owner:" "$OUTDIR"
 
 success "done: $iso"

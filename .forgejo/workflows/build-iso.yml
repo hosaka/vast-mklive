@@ -7,6 +7,7 @@ on:
   #   paths:
   #     - "vast/**"
   #     - "!vast/**.md"
+  #     - "!vast/qemu.just"
   #     - "justfile"
   #     - ".forgejo/workflows/build-iso.yml"
   workflow_dispatch:
@@ -71,7 +72,7 @@ jobs:
 
       - name: Build ISO
         run: |
-          DOTFILES=/tmp/dotfiles just iso "$FLAVOUR"
+          just iso "$FLAVOUR" --dotfiles /tmp/dotfiles
           cat out/*.sha256
 
       - name: Publish ISO
