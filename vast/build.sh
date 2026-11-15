@@ -120,6 +120,11 @@ grep -q "_groups=\".*,$usergroups\"" "$installer" ||
   die "could not set the default groups in void-installer, has installer.sh changed?"
 chmod 755 "$installer"
 
+# console login text of the live system, instead of mklive's data/issue which
+# names its own live user (void-installer removes it from the installed system)
+mkdir -p "$work/include/etc"
+sed -e "s|@@TITLE@@|$TITLE|g" -e "s|@@USERNAME@@|$USERNAME|g" vast/issue >"$work/include/etc/issue"
+
 args=(
   -a x86_64
   -v "$KERNEL"
