@@ -39,12 +39,13 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 
 A **profile** is a chezmoi flag (e.g. `desktop`, `development`), each profile has a package group with its services in `packages.toml` and some dotfiles that are only applied when it is on. A **flavour** is an ISO with the profiles baked into it. Flavours only bake in what the live system needs to run on the hardware, profiles can turned on after installing (see [Installing](#installing)).
 
-| Flavour | ISO | GPUs |
-| --- | --- | --- |
-| `noctalia` | `vast-noctalia-x86_64-<date>.iso` | anything with open drivers: AMD, Intel, kernel drivers and Mesa |
-| `noctalia-nvidia` | `vast-noctalia-nvidia-x86_64-<date>.iso` | NVIDIA Turing and newer, adds the proprietary driver, about 1G extra |
+| Flavour | ISO | Profiles | GPUs |
+| --- | --- | --- | --- |
+| `minimal` | `vast-minimal-x86_64-<date>.iso` | none, console only | any, no graphics stack |
+| `noctalia` | `vast-noctalia-x86_64-<date>.iso` | `desktop` | anything with open drivers: AMD, Intel, kernel drivers and Mesa |
+| `noctalia-nvidia` | `vast-noctalia-nvidia-x86_64-<date>.iso` | `desktop`, `nvidia` | NVIDIA Turing and newer, adds the proprietary driver |
 
-- Both have the same Niri/Noctalia desktop.
+- `minimal` boots to a console login, `void-installer` works there the same way.
 - Vulkan drivers and hardware video decoding (`mesa-vulkan-radeon`, `mesa-vulkan-intel`, `mesa-vaapi`, `intel-media-driver`) are not included, install what your hardware needs.
 
 ## Building
@@ -100,7 +101,7 @@ Run `void-installer` from the live system as root: `doas void-installer`:
 - **Services**: Everything the flavour enables is already ticked.
 - **Mirror**: Leave this as is.
 
-After the first boot, turn on the profiles that the ISO leaves out. This installs their packages, runs `chezmoi apply` and links their services:
+After the first boot, you can turn on the individual profiles. This installs profile packages, runs `chezmoi apply` for user and system config, and links the necessary services:
 
 ```bash
 just profile on development

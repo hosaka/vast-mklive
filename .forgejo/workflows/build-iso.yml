@@ -13,11 +13,12 @@ on:
   workflow_dispatch:
     inputs:
       flavour:
-        description: "Flavour to buid, or all of them"
+        description: "Flavour to build, or all of them"
         type: choice
         # note: keep in sync with vast/flavours/
         options:
           - all
+          - minimal
           - noctalia
           - noctalia-nvidia
         default: "all"

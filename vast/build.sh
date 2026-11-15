@@ -46,7 +46,7 @@ for tool in chezmoi git jq; do
   command -v "$tool" >/dev/null || die "$tool is required"
 done
 
-# shellcheck source-path=SCRIPTDIR source=flavours/noctalia.env
+# shellcheck source-path=SCRIPTDIR source=flavours/minimal.env
 . "vast/flavours/$flavour.env"
 
 OUTDIR=$(readlink -m "${OUTDIR:-out}")

@@ -11,7 +11,7 @@ sudo := ```
   fi
 ```
 
-# upstream void-mklive (the forgejo mirror of github.com/void-linux/void-mklive)
+# upstream void-mklive (the forgejo mirror of https://github.com/void-linux/void-mklive)
 upstream := env("UPSTREAM", "https://code.hosaka.cc/github/void-mklive.git")
 
 out := justfile_directory() / "out"
@@ -30,7 +30,7 @@ out := justfile_directory() / "out"
 [arg('fast', long='fast', value='1', help='gzip squashfs instead of xz, quicker to build but a bigger ISO')]
 [arg('keep', long='keep', value='1', help='Keep the mklive build directory for manual inspection')]
 [arg('dry_run', long='dry-run', value='1', help='Only print the packages, services and mklive.sh arguments, needs no root')]
-[arg('flavour', pattern='all|noctalia|noctalia-nvidia', help='Flavour to build')]
+[arg('flavour', pattern='all|minimal|noctalia|noctalia-nvidia', help='Flavour to build')]
 [doc('build an ISO as root')]
 iso flavour='noctalia' dotfiles='~/.local/share/chezmoi' outdir=out fast='' keep='' dry_run='':
     {{ if dry_run == '' { sudo } else { '' } }} env \
