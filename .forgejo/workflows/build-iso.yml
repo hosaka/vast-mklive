@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       flavour:
-        description: "Flavour from vast/flavours/, or all of them"
+        description: "Flavour to buid, or all of them"
         type: choice
         # note: keep in sync with vast/flavours/
         options:
@@ -32,7 +32,8 @@ on:
 
 jobs:
   build:
-    runs-on: linux-amd64
+    # mklive.sh needs losetup and mount, hence the privileged build env
+    runs-on: linux-amd64-privileged
 
     env:
       # todo: shouldn't this be a matrix build instead of sequential?
