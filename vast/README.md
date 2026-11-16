@@ -10,12 +10,11 @@ Everything about *what* is on the system lives in the [dotfiles](https://code.ho
 
 | What | Where |
 | --- | --- |
+| Flavour configuration | here: `vast/flavours/<flavour>.env` |
+| User dotfiles | dotfiles: `dotfiles/` |
 | Packages and services | dotfiles: `dotfiles/.chezmoidata/packages.toml` |
 | System files (`/etc`) | dotfiles: `system/`, a separate chezmoi source applied to `/` |
-| XBPS repos and ignored packages | dotfiles: `system/etc/xbps.d/` |
-| User dotfiles | dotfiles: `dotfiles/` |
-| Flags, kernel, user and its groups | here: `vast/flavours/<flavour>.env` |
-| vast-packages signing key | here: `keys/d4:fe:01:8b:18:0e:5c:ea:25:00:50:a5:b5:77:78:2c.plist` |
+| XBPS repos | dotfiles: `system/etc/xbps.d/` |
 
 ## How it works
 
@@ -97,9 +96,18 @@ Run `void-installer` from the live system as root: `doas void-installer`:
 
 - **Source**: `Local`. Copies from the live system, (with all packages, services, `/etc`) instead of downloading a bare `base-system` with `Network`.
 - **User account**: Any username. The groups in the flavour's `USERGROUPS` are already ticked, on top of the installer's defaults.
-- **Filesystems**: ext4 or btrfs (note that the installer's btrfs has no subvolumes, so there is no snapper setup yet).
+- **BootLoader**: `Manage bootloader otherwise` for limine (`BOOTLOADER=limine`, the default), or the disk for GRUB.
+- **Filesystems**: ext4 or btrfs (note that the installer's btrfs has no subvolumes, so there is no snapper setup yet). The EFI system partition (FAT32) is mounted at `/boot` for limine, which only reads FAT, so the kernel has to live there. Allocate 1G or more for the EFI partition, it holds every kernel and initramfs until `vkpurge` removes the old ones.
 - **Services**: Everything the flavour enables is already ticked.
 - **Mirror**: Leave this as is.
+
+For limine, don't reboot when the installer is done. Install it with the root partition you picked in the installer:
+
+```bash
+doas vast-limine /dev/sda2
+```
+
+[limine.sh](limine.sh) copies limine to `EFI/limine/` on the ESP, writes `limine.conf` with the kernel command line and adds a `Vast Linux` UEFI boot entry. The `60-limine` kernel hook from the dotfiles manages available boot entries after every kernel update. Only UEFI is supported.
 
 After the first boot, you can turn on the individual profiles. This installs profile packages, runs `chezmoi apply` for user and system config, and links the necessary services:
 

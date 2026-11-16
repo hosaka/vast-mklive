@@ -10,8 +10,11 @@ To install, run:
 
     $ doas void-installer
 
-and follow the on-screen instructions. To install more software, configure
-the network and use xbps-install(1), or xbps-query(1) for package info.
+and follow the on-screen instructions.
+
+@@BOOTLOADER@@
+To install more software, configure the network and use xbps-install(1), or
+xbps-query(1) for package info.
 
 Based on Void Linux, https://www.voidlinux.org
 

@@ -1,0 +1,5 @@
+In the BootLoader menu choose "Manage bootloader otherwise", and mount the EFI
+system partition at /boot. Afterwards, install limine with:
+
+    $ doas vast-limine <root partition>
+

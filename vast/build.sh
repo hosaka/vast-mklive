@@ -120,10 +120,28 @@ grep -q "_groups=\".*,$usergroups\"" "$installer" ||
   die "could not set the default groups in void-installer, has installer.sh changed?"
 chmod 755 "$installer"
 
+# the bootloader of the installed system, the ISO itself always boots with grub
+case "${BOOTLOADER:-}" in
+grub)
+  BOOTLOADER_PACKAGES=""
+  issue_note=/dev/null
+  ;;
+limine)
+  # efibootmgr is explicit, void-installer removes grub and the dependencies
+  # that nothing else needs when the bootloader is managed otherwise
+  BOOTLOADER_PACKAGES="limine efibootmgr"
+  install -m755 vast/limine.sh "$work/include/usr/bin/vast-limine"
+  issue_note=vast/issue.limine
+  ;;
+*) die "BOOTLOADER must be limine or grub, got '${BOOTLOADER:-}'" ;;
+esac
+
 # console login text of the live system, instead of mklive's data/issue which
 # names its own live user (void-installer removes it from the installed system)
 mkdir -p "$work/include/etc"
-sed -e "s|@@TITLE@@|$TITLE|g" -e "s|@@USERNAME@@|$USERNAME|g" vast/issue >"$work/include/etc/issue"
+sed -e "s|@@TITLE@@|$TITLE|g" -e "s|@@USERNAME@@|$USERNAME|g" \
+  -e "/@@BOOTLOADER@@/{r $issue_note" -e 'd}' \
+  vast/issue >"$work/include/etc/issue"
 
 args=(
   -a x86_64
@@ -131,7 +149,7 @@ args=(
   -T "$TITLE"
   -k "$KEYMAP"
   -l "$LOCALE"
-  -p "${packages[*]} $INSTALLER_PACKAGES $EXTRA_PACKAGES"
+  -p "${packages[*]} $INSTALLER_PACKAGES $BOOTLOADER_PACKAGES $EXTRA_PACKAGES"
   -S "${services[*]}"
   -g "${ignored[*]}"
   -I "$work/include"
@@ -148,7 +166,7 @@ done
 [ -z "${FAST:-}" ] || args+=(-s gzip)
 [ -z "${KEEP:-}" ] || args+=(-K)
 
-info "flavour $flavour, ${#packages[@]} packages from chezmoi, kernel $KERNEL"
+info "flavour $flavour, ${#packages[@]} packages from chezmoi, kernel $KERNEL, bootloader $BOOTLOADER"
 info "services: ${services[*]}"
 info "repositories: ${repos[*]}"
 
