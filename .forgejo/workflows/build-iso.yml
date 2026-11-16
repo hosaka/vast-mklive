@@ -57,7 +57,9 @@ jobs:
           mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
           sed -i "s|repo-default.voidlinux.org|$XBPS_MIRROR_URL|g" /etc/xbps.d/*-repository-*.conf
           xbps-install -Syu xbps && xbps-install -yu
-          xbps-install -y bash chezmoi coreutils curl dosfstools e2fsprogs gawk git jq just kmod util-linux
+          # lzo: mklive.sh runs mksquashfs against the container libraries
+          # container/Containerfile in void-linux/void-mklive repo installs it for the same reason
+          xbps-install -y bash chezmoi coreutils curl dosfstools e2fsprogs gawk git jq just kmod lzo util-linux
 
       - name: Checkout repository
         run: |
